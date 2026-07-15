@@ -21,14 +21,13 @@ class PlayerService {
     }
 
     async getList(query: any) {
-        await new Promise((resolve) => setTimeout(resolve, 4000));
-
         const {
             page = 1,
             limit = 10,
             search = "",
             sortBy = "createdAt",
             sortOrder = "desc",
+            season,
         } = query;
 
         const filter: any = {};
@@ -46,12 +45,96 @@ class PlayerService {
             [sortBy]: sortOrder === "asc" ? 1 : -1,
         };
 
-        const [items, total] = await Promise.all([
-            Player.find(filter)
-                .sort(sort)
-                .skip(skip)
-                .limit(+limit),
+        const pipeline: any[] = [
+            {
+                $match: filter,
+            },
+            {
+                $lookup: {
+                    from: "playerseasonstats",
+                    let: {
+                        playerId: "$_id",
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: [
+                                        "$playerId",
+                                        "$$playerId",
+                                    ],
+                                },
+                            },
+                        },
+                    ],
+                    as: "seasonStats",
+                },
+            },
+        ];
 
+        if (season) {
+            pipeline.push(
+                {
+                    $addFields: {
+                        seasonStats: {
+                            $filter: {
+                                input: "$seasonStats",
+                                as: "item",
+                                cond: {
+                                    $eq: [
+                                        "$$item.season",
+                                        Number(season),
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                },
+                {
+                    $unwind: {
+                        path: "$seasonStats",
+                        preserveNullAndEmptyArrays: true,
+                    },
+                },
+                {
+                    $addFields: {
+                        goals: {
+                            $ifNull: [
+                                "$seasonStats.goals",
+                                0,
+                            ],
+                        },
+                        assists: {
+                            $ifNull: [
+                                "$seasonStats.assists",
+                                0,
+                            ],
+                        },
+                        ga: {
+                            $ifNull: [
+                                "$seasonStats.ga",
+                                0,
+                            ],
+                        },
+                    },
+                }
+            );
+        }
+
+        pipeline.push(
+            {
+                $sort: sort,
+            },
+            {
+                $skip: skip,
+            },
+            {
+                $limit: Number(limit),
+            }
+        );
+
+        const [items, total] = await Promise.all([
+            Player.aggregate(pipeline),
             Player.countDocuments(filter),
         ]);
 

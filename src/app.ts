@@ -5,6 +5,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import authRoute from "./routes/auth.route";
 import playerRoutes from "./routes/player.route";
+import MatchRouter from "./routes/match.route";
 
 const app = express();
 
@@ -26,5 +27,8 @@ app.use(cookieParser());
 app.use("/api/auth", authRoute);
 
 app.use("/api/players", playerRoutes);
+
+app.use("/api/matches", MatchRouter);
+
 
 export default app;
