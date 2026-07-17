@@ -76,12 +76,14 @@ const matchSchema = new Schema(
 
 // Tính tỷ số từ danh sách bàn thắng
 matchSchema.virtual("score").get(function () {
-    const our = this.goals.filter(
-        (goal: any) => goal.team === "OUR"
+    const goals = this.goals as any[];
+
+    const our = goals.filter(
+        goal => goal.team === "OUR"
     ).length;
 
-    const opponent = this.goals.filter(
-        (goal: any) => goal.team === "OPPONENT"
+    const opponent = goals.filter(
+        goal => goal.team === "OPPONENT"
     ).length;
 
     return {
