@@ -2,37 +2,41 @@ import Match from "../models/match.model";
 import PlayerSeasonStatService from "./player-season-stat.service";
 
 class MatchService {
+
     async create(body: any) {
+
         const match = await Match.create(body);
 
         await PlayerSeasonStatService.recalculateSeason(match.season);
 
-        return match;
+        return this.getById(match.id);
     }
 
     async update(id: string, body: any) {
-        const oldMatch = await Match.findById(id);
 
-        if (!oldMatch) {
+        const match = await Match.findById(id);
+
+        if (!match) {
             throw new Error("Match not found");
         }
 
-        const oldSeason = oldMatch.season;
+        const oldSeason = match.season;
 
-        Object.assign(oldMatch, body);
+        Object.assign(match, body);
 
-        await oldMatch.save();
+        await match.save();
 
-        if (oldSeason !== oldMatch.season) {
+        if (oldSeason !== match.season) {
             await PlayerSeasonStatService.recalculateSeason(oldSeason);
         }
 
-        await PlayerSeasonStatService.recalculateSeason(oldMatch.season);
+        await PlayerSeasonStatService.recalculateSeason(match.season);
 
-        return oldMatch;
+        return this.getById(id);
     }
 
     async getAll(query: any) {
+
         const {
             page = 1,
             limit = 10,
@@ -83,21 +87,30 @@ class MatchService {
         };
     }
 
+    async getById(id: string) {
+
+        const match = await Match.findById(id)
+            .populate("goals.scorerPlayerId", "name number")
+            .populate("goals.assistPlayerId", "name number");
+
+        if (!match) {
+            throw new Error("Match not found");
+        }
+
+        return match;
+    }
+
     async delete(id: string) {
+
         const match = await Match.findById(id);
 
         if (!match) {
             throw new Error("Match not found");
         }
 
-        const season = match.season;
-
         await Match.findByIdAndDelete(id);
 
-        // Cập nhật lại thống kê của mùa sau khi xóa trận đấu
-        await PlayerSeasonStatService.recalculateSeason(season);
-
-        return match;
+        await PlayerSeasonStatService.recalculateSeason(match.season);
     }
 }
 

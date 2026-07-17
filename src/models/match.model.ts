@@ -1,57 +1,93 @@
 import { Schema, model } from "mongoose";
 
 const goalSchema = new Schema(
-  {
-    scorerPlayerId: {
-      type: Schema.Types.ObjectId,
-      ref: "Player",
-      default: null,
+    {
+        // Bàn thắng thuộc đội nào
+        team: {
+            type: String,
+            enum: ["OUR", "OPPONENT"],
+            required: true,
+        },
+
+        // Loại bàn thắng
+        type: {
+            type: String,
+            enum: ["NORMAL", "OWN_GOAL"],
+            default: "NORMAL",
+        },
+
+        // Cầu thủ ghi bàn (null nếu phản lưới)
+        scorerPlayerId: {
+            type: Schema.Types.ObjectId,
+            ref: "Player",
+            default: null,
+        },
+
+        // Cầu thủ kiến tạo (có thể null)
+        assistPlayerId: {
+            type: Schema.Types.ObjectId,
+            ref: "Player",
+            default: null,
+        },
+
+        // Phút ghi bàn (để sau này hiển thị timeline)
+        minute: {
+            type: Number,
+            min: 0,
+            max: 130,
+            default: null,
+        },
     },
-    assistPlayerId: {
-      type: Schema.Types.ObjectId,
-      ref: "Player",
-      default: null,
-    },
-  },
-  { _id: false }
+    {
+        _id: false,
+    }
 );
 
 const matchSchema = new Schema(
-  {
-    season: {
-      type: Number,
-      required: true,
+    {
+        season: {
+            type: Number,
+            required: true,
+        },
+
+        opponent: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        matchDate: {
+            type: Date,
+            required: true,
+        },
+
+        goals: {
+            type: [goalSchema],
+            default: [],
+        },
     },
-
-    opponent: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    matchDate: {
-      type: Date,
-      required: true,
-    },
-
-    score: {
-      our: {
-        type: Number,
-        required: true,
-      },
-
-      opponent: {
-        type: Number,
-        required: true,
-      },
-    },
-
-    goals: [goalSchema],
-  },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+    {
+        timestamps: true,
+        versionKey: false,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true },
+    }
 );
+
+// Tính tỷ số từ danh sách bàn thắng
+matchSchema.virtual("score").get(function () {
+    const our = this.goals.filter(
+        (goal: any) => goal.team === "OUR"
+    ).length;
+
+    const opponent = this.goals.filter(
+        (goal: any) => goal.team === "OPPONENT"
+    ).length;
+
+    return {
+        our,
+        opponent,
+    };
+});
 
 export default model("Match", matchSchema);

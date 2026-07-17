@@ -15,17 +15,14 @@ class MatchController {
                 data: match,
             });
         } catch (err: any) {
-            res.status(500).json({
+            res.status(400).json({
                 success: false,
                 message: err.message,
             });
         }
     }
 
-    async update(
-        req: Request<MatchParams>,
-        res: Response
-    ) {
+    async update(req: Request<MatchParams>, res: Response) {
         try {
             const match = await MatchService.update(
                 req.params.id,
@@ -37,7 +34,7 @@ class MatchController {
                 data: match,
             });
         } catch (err: any) {
-            res.status(500).json({
+            res.status(400).json({
                 success: false,
                 message: err.message,
             });
@@ -60,20 +57,32 @@ class MatchController {
         }
     }
 
-    async delete(
-        req: Request<MatchParams>,
-        res: Response
-    ) {
+    async getById(req: Request<MatchParams>, res: Response) {
         try {
-            const match = await MatchService.delete(req.params.id);
+            const match = await MatchService.getById(req.params.id);
+
+            res.json({
+                success: true,
+                data: match,
+            });
+        } catch (err: any) {
+            res.status(404).json({
+                success: false,
+                message: err.message,
+            });
+        }
+    }
+
+    async delete(req: Request<MatchParams>, res: Response) {
+        try {
+            await MatchService.delete(req.params.id);
 
             res.json({
                 success: true,
                 message: "Match deleted successfully",
-                data: match,
             });
         } catch (err: any) {
-            res.status(500).json({
+            res.status(404).json({
                 success: false,
                 message: err.message,
             });

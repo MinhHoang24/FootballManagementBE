@@ -30,6 +30,12 @@ class PlayerService {
             season,
         } = query;
 
+        if (!season) {
+            throw new Error("Season is required");
+        }
+
+        const seasonNumber = Number(season);
+
         const filter: any = {};
 
         if (search) {
@@ -76,43 +82,39 @@ class PlayerService {
             pipeline.push(
                 {
                     $addFields: {
-                        seasonStats: {
-                            $filter: {
-                                input: "$seasonStats",
-                                as: "item",
-                                cond: {
-                                    $eq: [
-                                        "$$item.season",
-                                        Number(season),
-                                    ],
+                        seasonStat: {
+                            $first: {
+                                $filter: {
+                                    input: "$seasonStats",
+                                    as: "item",
+                                    cond: {
+                                        $eq: [
+                                            "$$item.season",
+                                            seasonNumber,
+                                        ],
+                                    },
                                 },
                             },
                         },
                     },
                 },
                 {
-                    $unwind: {
-                        path: "$seasonStats",
-                        preserveNullAndEmptyArrays: true,
-                    },
-                },
-                {
                     $addFields: {
                         goals: {
                             $ifNull: [
-                                "$seasonStats.goals",
+                                "$seasonStat.goals",
                                 0,
                             ],
                         },
                         assists: {
                             $ifNull: [
-                                "$seasonStats.assists",
+                                "$seasonStat.assists",
                                 0,
                             ],
                         },
                         ga: {
                             $ifNull: [
-                                "$seasonStats.ga",
+                                "$seasonStat.ga",
                                 0,
                             ],
                         },
@@ -123,7 +125,10 @@ class PlayerService {
 
         pipeline.push(
             {
-                $sort: sort,
+                $sort: {
+                    [sortBy]:
+                        sortOrder === "asc" ? 1 : -1,
+                },
             },
             {
                 $skip: skip,
