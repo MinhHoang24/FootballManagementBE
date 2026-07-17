@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import authRoute from "./routes/auth.route";
 import playerRoutes from "./routes/player.route";
 import MatchRouter from "./routes/match.route";
+import financeRoutes from "./routes/finance.route";
 
 const app = express();
 
@@ -30,5 +31,6 @@ app.use("/api/players", playerRoutes);
 
 app.use("/api/matches", MatchRouter);
 
+app.use("/api/finance", financeRoutes);
 
 export default app;
