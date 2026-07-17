@@ -14,7 +14,9 @@ class PlayerSeasonStatService {
         >();
 
         for (const match of matches) {
-            for (const goal of Array.from(match.goals as any)) {
+            const goals = match.goals as any[];
+
+            for (const goal of goals) {
                 if (goal.scorerPlayerId) {
                     const id = goal.scorerPlayerId.toString();
 
